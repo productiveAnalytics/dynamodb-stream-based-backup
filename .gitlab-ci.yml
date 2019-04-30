@@ -1,0 +1,69 @@
+stages:
+- check
+- test
+- build
+- deploy
+
+variables:
+   TEAM: "hds"
+   AWS_DEFAULT_REGION: "us-east-1"
+   #Stage name = Environment
+   #STAGE_NAME_DEV: "dev"
+   #STAGE_NAME_QA: "qa"
+   #STAGE_NAME_TEST: "test"
+   #STAGE_NAME_SIT: "sit"
+   #STAGE_NAME_PROD: "prod"
+
+checkTask:
+  stage: check
+  tags:
+  - hds
+  - aws-non-prod
+  variables:
+    GIT_STRATEGY: none
+    ENV_NAME: "dev"
+  script:
+    - sls print
+    - echo "Check analysis complete."
+
+testTask:
+  stage: test
+  variables:
+    GIT_STRATEGY: none
+    ENV_NAME: "dev"
+  tags:
+  - hds
+  - aws-non-prod
+  script:
+    - sls package
+    - sls invoke local -f payerConfigVersionLambda -p ./tests/test_ddb_stream_event.json
+#   - sls invoke local -f someMoreMicroservice -p some_more_test.json # Add more micro services to test
+    - echo "Test complete."
+
+buildTask:
+  stage: build
+  variables:
+    GIT_STRATEGY: none
+    ENV_NAME: "dev"
+  tags:
+  - hds
+  - aws-non-prod
+  only:
+  - master
+  script:
+    - sls package
+    - echo "Build complete."
+
+deployTask:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+    ENV_NAME: "dev"
+  tags:
+  - hds
+  - aws-non-prod
+  only:
+  - master
+  script:
+    - sls deploy -v
+    - echo "Deploy complete."

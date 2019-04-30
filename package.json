@@ -1,0 +1,11 @@
+{
+  "name": "payerConfigVersionLambda",
+  "description": "Micro service to version hds_payer table",
+  "version": "0.2.0",
+  "dependencies": {
+	"aws-sdk": "^2.445.0"
+  },
+  "devDependencies": {
+    "serverless": "^1.41.0"
+  }
+}

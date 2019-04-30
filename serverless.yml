@@ -1,0 +1,86 @@
+
+service: hds-payerConfigVersion
+
+frameworkVersion: ">=1.41.0 <2.0.0"
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  role: arn:aws:iam::560395879688:role/Hds-Lambda
+# cfnRole: arn:aws:iam::560395879688:role/Hds-Developer
+  stackName: hds-${self:provider.stage}-${self:service}
+  deploymentBucket: 
+    name: hds-chc-dev-medicaltransactions
+    tags:
+      Owner: LDC
+      Zone: us-east-1
+      Usage: DevOps
+
+# you can overwrite defaults here
+  stage: ${opt:stage, 'dev'} 
+  region: ${opt:region, 'us-east-1'}
+
+# you can add statements to the Lambda function's IAM Role here
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", "hds-chc-dev-medicaltransactions" ] ]  }
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - "hds-chc-dev-medicaltransactions"
+            - "/*"
+
+# you can define service wide environment variables here
+  environment:
+    DEBUG: true
+
+# you can add packaging information here
+#package:
+#  include:
+#    - include-me.js
+#    - include-me-dir/**
+#  exclude:
+#    - exclude-me.js
+#    - exclude-me-dir/**
+
+functions:
+  payerConfigVersionLambda:
+    handler: handler.processVersion
+    tags:
+      AppId: "38"
+      Billing: "MedicalTransactions/HDS"
+      Description: "env=dev/appid=38/monitor=false/team=HDS"
+      Zone: us-east-1
+      
+#    The following are a few example events you can configure
+#    NOTE: Please make sure to change your handler code to work with those events
+#    Check the event documentation for details
+    events:
+#      - http:
+#          path: users/create
+#          method: get
+#      - websocket: $connect
+#      - s3: ${env:BUCKET}
+#      - schedule: rate(10 minutes)
+#      - sns: greeter-topic
+       - stream:
+            batchSize: 1
+            arn:
+              arn:aws:dynamodb:us-east-1:560395879688:table/hds_payer/stream/2019-04-29T04:13:51.403
+#       - stream:
+#           type: dynamodb
+#           batchSize: 1
+#           startingPosition: LATEST
+#           arn:
+#             Fn::GetAtt: [ "hds_payer", StreamArn ]
+#      - cloudwatchLog: '/aws/lambda/hds-payerConfigVersion'
+#
+#    Define function environment variables here
+#    environment:
+#      variable2: value2
