@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "This template deploys the HDS Payer DDB Table"
+
+######################
+# Parameters section
+######################
+
+Parameters:
+
+  TABLENAME:
+    Description: HDS Payer Table - Stores DL and TX configuration information for Payers
+    Type: String
+    MinLength: 1
+    MaxLength: 50
+    AllowedPattern: '^hds[-_][a-zA-Z][-_a-zA-Z0-9]*$'
+    Default: hds_payer_dev
+
+######################
+# Resources section
+######################
+
+Resources:
+  HdsPayerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${TABLENAME}
+      Tags:
+        - Key: "Billing"
+          Value: "MedicalTransactions/HDS"
+        - Key: "AppId"
+          Value: "38"
+        - Key: "Description"
+          Value: "env=dev/appid=38/monitor=false/team=HDS"
+      AttributeDefinitions:
+        - AttributeName: "payer_id"
+          AttributeType: "S"
+        - AttributeName: "active"
+          AttributeType: "S"
+        - AttributeName: "tradingPartnerId"
+          AttributeType: "S"
+        - AttributeName: "insertedDatetime"
+          AttributeType: "S"
+        - AttributeName: "insertedBy"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "payer_id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+
+      GlobalSecondaryIndexes:
+        - IndexName: active-payer-index
+          KeySchema:
+            - AttributeName: active
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        - IndexName: tradingPartnerId-index
+          KeySchema:
+            - AttributeName: tradingPartnerId
+              KeyType: HASH
+            - AttributeName: "payer_id"
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5      
+        - IndexName: insertedBy-insertedTS-index
+          KeySchema:
+            - AttributeName: insertedBy
+              KeyType: HASH
+            - AttributeName: insertedDatetime
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES      
+
+######################
+# Outputs section
+######################
+
+Outputs:
+  HdsPayerTable:
+    Description: HDS Payer - Stroed DL and TX Configuration Information by Payer
+    Value: !GetAtt HdsPayerTable.Arn

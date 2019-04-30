@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "This template deploys the History table for HDS Payer DDB table"
+
+######################
+# Parameters section
+######################
+
+Parameters:
+
+  TABLENAME:
+    Description: History for HDS Payer table
+    Type: String
+    MinLength: 1
+    MaxLength: 50
+    AllowedPattern: '^hds[-_][a-zA-Z][-_a-zA-Z0-9]*$'
+    Default: hds_payer_history_dev
+
+######################
+# Resources section
+######################
+
+Resources:
+  HdsPayerHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${TABLENAME}
+      Tags:
+        - Key: "Billing"
+          Value: "MedicalTransactions/HDS"
+        - Key: "AppId"
+          Value: "38"
+        - Key: "Description"
+          Value: "env=dev/appid=38/monitor=false/team=HDS"
+      AttributeDefinitions:
+        - AttributeName: "payer_id"
+          AttributeType: "S"
+        - AttributeName: "active"
+          AttributeType: "S"
+        - AttributeName: "tradingPartnerId"
+          AttributeType: "S"
+        - AttributeName: "expiredOn"
+          AttributeType: "S"
+        - AttributeName: "expiredBy"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "payer_id"
+          KeyType: HASH
+        - AttributeName: "expiredOn"
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: "2"
+        WriteCapacityUnits: "2"
+
+      GlobalSecondaryIndexes:
+        - IndexName: active-payer-index
+          KeySchema:
+            - AttributeName: active
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1    
+        - IndexName: tradingPartnerId-index
+          KeySchema:
+            - AttributeName: "tradingPartnerId"
+              KeyType: HASH
+            - AttributeName: "payer_id"
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1  
+        - IndexName: expiredBy-expiredOn-index
+          KeySchema:
+            - AttributeName: expiredBy
+              KeyType: HASH
+            - AttributeName: expiredOn
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1          
+
+######################
+# Outputs section
+######################
+
+Outputs:
+  HdsPayerHistoryTable:
+    Description: History table for HDS Payer table.
+    Value: !GetAtt HdsPayerHistoryTable.Arn
